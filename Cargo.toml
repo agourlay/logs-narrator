@@ -1,0 +1,11 @@
+[package]
+name = "logs-narrator"
+version = "0.1.0"
+authors = ["Arnaud Gourlay <arnaud.gourlay@gmail.com>"]
+description = "Merge logs to tell a story"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.19"
+colored = "2.0.0"
+regex = "1.5.6"
