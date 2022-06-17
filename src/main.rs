@@ -117,8 +117,8 @@ struct LogFile {
     id_colored: Option<ColoredString>,
 }
 
-// TODO Generate more than 6 colors
-const ALL_COLORS: [Color; 6] = [Red, Green, Yellow, Blue, Magenta, Cyan];
+// TODO Generate more than 12 colors
+const ALL_COLORS: [Color; 12] = [Red, Green, Yellow, Blue, Magenta, Cyan,  BrightRed, BrightGreen, BrightYellow, BrightBlue, BrightMagenta, BrightCyan];
 
 /// Assume files fit in memory \o/
 fn load_files_in_memory(
