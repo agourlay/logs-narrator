@@ -78,27 +78,36 @@ fn render_log_entry(
     log_file: &LogFile,
     color_index: &HashMap<String, &ColoredString>,
 ) {
+    let mut tmp_line = log_entry.line.clone();
+    // naive color log level
+    tmp_line = tmp_line.replace("ERROR", &format!("{}", "ERROR".color(Red).bold()));
+    tmp_line = tmp_line.replace("WARN", &format!("{}", "WARN".color(Yellow).bold()));
+    tmp_line = tmp_line.replace("INFO", &format!("{}", "INFO".bold()));
+
     if color_index.is_empty() {
         // no additional coloring
-        println!("[{}]{}", log_file.file_name_colored, log_entry.line);
+        println!("[{}]{}", log_file.file_name_colored, tmp_line);
     } else {
         let prefix = log_file
             .id_colored
             .as_ref()
             .unwrap_or(&log_file.file_name_colored);
 
-        let mut tmp = log_entry.line.clone();
         // color ids founds
         for (id, colored_id) in color_index {
-            tmp = tmp.replace(id, &format!("{}", &colored_id));
+            tmp_line = tmp_line.replace(id, &format!("{}", &colored_id));
         }
 
-        println!("[{}][{}]{}", log_file.file_name, prefix, tmp);
+        println!("[{}][{}]{}", log_file.file_name, prefix, tmp_line);
     }
 }
 
 fn parse_date(line: &str) -> DateTime<FixedOffset> {
-    DateTime::parse_from_rfc3339(line).unwrap()
+    let date_str = &line[1..25]; // focus on date (will break on other format!)
+    match DateTime::parse_from_rfc3339(date_str) {
+        Ok(dt) => dt,
+        Err(_) => panic!("Not a valid date slice:{}, full:{}", date_str, line)
+    }
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
@@ -117,8 +126,9 @@ struct LogFile {
     id_colored: Option<ColoredString>,
 }
 
-// TODO Generate more than 12 colors
-const ALL_COLORS: [Color; 12] = [Red, Green, Yellow, Blue, Magenta, Cyan,  BrightRed, BrightGreen, BrightYellow, BrightBlue, BrightMagenta, BrightCyan];
+// TODO Generate more than 10 colors
+// Keep RED & YELLOW out of this to use it for log level
+const COLORS_FOR_IDS: [Color; 10] = [Green, Blue, Magenta, Cyan, BrightRed, BrightGreen, BrightYellow, BrightBlue, BrightMagenta, BrightCyan];
 
 /// Assume files fit in memory \o/
 fn load_files_in_memory(
@@ -161,13 +171,12 @@ fn load_files_in_memory(
         let lines = content
             .into_iter()
             .map(|line| {
-                let date_str = &line[1..25]; // focus on date (will break on other format!)
-                let timestamp = parse_date(date_str);
-                let line = line.clone();
+                // TODO handle lines without timestamp (e.g panics)
+                let timestamp = parse_date(&line);
                 LogEntry { timestamp, line }
             })
             .collect();
-        let color = ALL_COLORS[index];
+        let color = COLORS_FOR_IDS[index];
         let file_name_colored = file_name.color(color);
         let id_colored = id.as_ref().map(|it| it.color(color));
         let log_file = LogFile {
