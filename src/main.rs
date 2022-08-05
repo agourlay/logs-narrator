@@ -11,6 +11,7 @@ use std::{env, fs, io};
 fn main() -> io::Result<()> {
     // TODO CLI args management
     let input_dir = env::args().nth(1).unwrap();
+    // TODO inject id_detection from CLI
     let id_detection_regex = Regex::new(r"(?:newRaft, raft_id: )(\d+)").unwrap();
 
     let log_files = load_files_in_memory(&input_dir, Some(id_detection_regex))?;
@@ -106,7 +107,7 @@ fn parse_date(line: &str) -> DateTime<FixedOffset> {
     let date_str = &line[1..25]; // focus on date (will break on other format!)
     match DateTime::parse_from_rfc3339(date_str) {
         Ok(dt) => dt,
-        Err(_) => panic!("Not a valid date slice:{}, full:{}", date_str, line)
+        Err(_) => panic!("Not a valid date slice:{}, full:{}", date_str, line),
     }
 }
 
@@ -128,7 +129,18 @@ struct LogFile {
 
 // TODO Generate more than 10 colors
 // Keep RED & YELLOW out of this to use it for log level
-const COLORS_FOR_IDS: [Color; 10] = [Green, Blue, Magenta, Cyan, BrightRed, BrightGreen, BrightYellow, BrightBlue, BrightMagenta, BrightCyan];
+const COLORS_FOR_IDS: [Color; 10] = [
+    Green,
+    Blue,
+    Magenta,
+    Cyan,
+    BrightRed,
+    BrightGreen,
+    BrightYellow,
+    BrightBlue,
+    BrightMagenta,
+    BrightCyan,
+];
 
 /// Assume files fit in memory \o/
 fn load_files_in_memory(
