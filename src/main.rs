@@ -103,9 +103,13 @@ fn render_log_entry(
     }
 }
 
-fn parse_date(line: &str) -> ParseResult<DateTime<FixedOffset>> {
-    let date_str = &line[1..25]; // focus on date (will break on other format!)
-    DateTime::parse_from_rfc3339(date_str)
+fn parse_date(line: &str) -> Option<DateTime<FixedOffset>> {
+    if line.chars().count() > 25 {
+        let date_str = &line[1..25]; // focus on date (will break on other format!)
+        DateTime::parse_from_rfc3339(date_str).ok()
+    } else {
+        None
+    }
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
@@ -180,13 +184,15 @@ fn load_files_in_memory(
         let lines = content
             .into_iter()
             .filter_map(|line| {
-                parse_date(&line)
-                    .map_err(|err| {
+                match parse_date(&line) {
+                    None => {
                         println!("WARN:Could not find valid timestamp in line:{}", &line);
-                        err
-                    })
-                    .map(|timestamp| LogEntry { timestamp, line })
-                    .ok()
+                        None
+                    },
+                    Some(timestamp) => {
+                        Some(LogEntry { timestamp, line })
+                    }
+                }
             })
             .collect();
         let color = COLORS_FOR_IDS[index];
