@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, FixedOffset, ParseResult};
 use colored::Color::*;
 use colored::Colorize;
 use colored::{Color, ColoredString};
@@ -103,12 +103,9 @@ fn render_log_entry(
     }
 }
 
-fn parse_date(line: &str) -> DateTime<FixedOffset> {
+fn parse_date(line: &str) -> ParseResult<DateTime<FixedOffset>> {
     let date_str = &line[1..25]; // focus on date (will break on other format!)
-    match DateTime::parse_from_rfc3339(date_str) {
-        Ok(dt) => dt,
-        Err(_) => panic!("Not a valid date slice:{}, full:{}", date_str, line),
-    }
+    DateTime::parse_from_rfc3339(date_str)
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
@@ -182,10 +179,14 @@ fn load_files_in_memory(
             });
         let lines = content
             .into_iter()
-            .map(|line| {
-                // TODO handle lines without timestamp (e.g panics)
-                let timestamp = parse_date(&line);
-                LogEntry { timestamp, line }
+            .filter_map(|line| {
+                parse_date(&line)
+                    .map_err(|err| {
+                        println!("WARN:Could not find valid timestamp in line:{}", &line);
+                        err
+                    })
+                    .map(|timestamp| LogEntry { timestamp, line })
+                    .ok()
             })
             .collect();
         let color = COLORS_FOR_IDS[index];
