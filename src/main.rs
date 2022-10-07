@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset, ParseResult};
+use chrono::{DateTime, FixedOffset};
 use colored::Color::*;
 use colored::Colorize;
 use colored::{Color, ColoredString};
@@ -183,16 +183,12 @@ fn load_files_in_memory(
             });
         let lines = content
             .into_iter()
-            .filter_map(|line| {
-                match parse_date(&line) {
-                    None => {
-                        println!("WARN:Could not find valid timestamp in line:{}", &line);
-                        None
-                    },
-                    Some(timestamp) => {
-                        Some(LogEntry { timestamp, line })
-                    }
+            .filter_map(|line| match parse_date(&line) {
+                None => {
+                    println!("WARN:Could not find valid timestamp in line:{}", &line);
+                    None
                 }
+                Some(timestamp) => Some(LogEntry { timestamp, line }),
             })
             .collect();
         let color = COLORS_FOR_IDS[index];
