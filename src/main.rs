@@ -122,7 +122,6 @@ struct LogFile {
     file_name: String,
     lines: Vec<LogEntry>,
     id: Option<String>,
-    color: Color,
     // cached values
     file_name_colored: ColoredString,
     id_colored: Option<ColoredString>,
@@ -198,7 +197,6 @@ fn load_files_in_memory(
             file_name,
             id,
             lines,
-            color,
             file_name_colored,
             id_colored,
         };
