@@ -1,4 +1,5 @@
 use chrono::{DateTime, FixedOffset};
+use clap::Parser;
 use colored::Color::*;
 use colored::Colorize;
 use colored::{Color, ColoredString};
@@ -6,15 +7,33 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::{env, fs, io};
+use std::{fs, io};
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Path to the log files
+    #[arg(short, long)]
+    path: String,
+
+    /// Whether to always color the output
+    #[arg(long, default_value_t = false)]
+    always_color: bool,
+}
 
 fn main() -> io::Result<()> {
-    // TODO CLI args management
-    let input_dir = env::args().nth(1).unwrap();
+    let args = Args::parse();
+
+    if args.always_color {
+        colored::control::set_override(true);
+    } else {
+        colored::control::set_override(false);
+    }
+
     // TODO inject id_detection from CLI
     let id_detection_regex = Regex::new(r"(?:newRaft, raft_id: )(\d+)").unwrap();
 
-    let log_files = load_files_in_memory(&input_dir, Some(id_detection_regex))?;
+    let log_files = load_files_in_memory(&args.path, Some(id_detection_regex))?;
     process_log_files(log_files);
     Ok(())
 }
@@ -155,8 +174,11 @@ fn load_files_in_memory(
         let path = p.as_ref().unwrap().path();
         path.extension().and_then(|os| os.to_str()) == Some("log")
     });
+    // colors attribution
+    let mut all_colors = COLORS_FOR_IDS.to_vec();
+    let mut colors_mapping = HashMap::new();
     // analyze paths
-    for (index, path) in log_paths.enumerate() {
+    for path in log_paths {
         let path = path?.path();
         let file_name = path
             .file_name()
@@ -190,7 +212,11 @@ fn load_files_in_memory(
                 Some(timestamp) => Some(LogEntry { timestamp, line }),
             })
             .collect();
-        let color = COLORS_FOR_IDS[index];
+        // attribute color by id or file name
+        let key_color = id.clone().unwrap_or_else(|| file_name.clone());
+        let color = *colors_mapping
+            .entry(key_color)
+            .or_insert_with(|| all_colors.remove(0));
         let file_name_colored = file_name.color(color);
         let id_colored = id.as_ref().map(|it| it.color(color));
         let log_file = LogFile {
