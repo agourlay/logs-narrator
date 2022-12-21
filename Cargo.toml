@@ -6,7 +6,7 @@ description = "Merge logs to tell a story"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.0.29", features = ["derive"] }
+clap = { version = "4.0.30", features = ["derive"] }
 chrono = "0.4.23"
 colored = "2.0.0"
 regex = "1.7.0"
