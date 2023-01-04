@@ -1,6 +1,6 @@
 # logs-narrator
 
-Merge logs to tell a story.
+Merge log files according to the timestamps to display the logs in a chronological order.
 
 Alternative to [lnav](https://github.com/tstack/lnav) where an additional host id can be extracted via a regex for logs correlation.
 

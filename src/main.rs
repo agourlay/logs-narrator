@@ -100,9 +100,10 @@ fn render_log_entry(
 ) {
     let mut tmp_line = log_entry.line.clone();
     // naive color log level
-    tmp_line = tmp_line.replace("ERROR", &format!("{}", "ERROR".color(Red).bold()));
-    tmp_line = tmp_line.replace("WARN", &format!("{}", "WARN".color(Yellow).bold()));
-    tmp_line = tmp_line.replace("INFO", &format!("{}", "INFO".bold()));
+    tmp_line = tmp_line
+        .replace("ERROR", &format!("{}", "ERROR".color(Red).bold()))
+        .replace("WARN", &format!("{}", "WARN".color(Yellow).bold()))
+        .replace("INFO", &format!("{}", "INFO".bold()));
 
     if color_index.is_empty() {
         // no additional coloring
