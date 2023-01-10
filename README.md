@@ -4,9 +4,7 @@ Merge log files according to the timestamps to display the logs in a chronologic
 
 Alternative to [lnav](https://github.com/tstack/lnav) where an additional host id can be extracted via a regex for logs correlation.
 
-## status
-
-WIP
+![example](example.png)
 
 ## usage
 
