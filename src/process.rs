@@ -101,7 +101,7 @@ fn parse_date(line: &str) -> Option<DateTime<FixedOffset>> {
     }
 }
 
-#[derive(Debug, Clone, PartialOrd, PartialEq)]
+#[derive(Debug, Clone, PartialOrd, PartialEq, Eq)]
 pub struct LogEntry {
     timestamp: DateTime<FixedOffset>,
     line: String,
