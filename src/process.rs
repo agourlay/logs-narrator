@@ -5,6 +5,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 use std::{fs, io};
 
 pub fn process_log_files(log_files: Vec<LogFile>) {
@@ -136,6 +137,20 @@ pub fn load_files_in_memory(
     input_dir: &str,
     id_detection_regex: Option<Regex>,
 ) -> io::Result<Vec<LogFile>> {
+    // validate input dir
+    let logs_path = Path::new(input_dir);
+    if !logs_path.exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("{} does not exist", input_dir),
+        ));
+    }
+    if !logs_path.is_dir() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("{} is not a directory", input_dir),
+        ));
+    }
     let paths = fs::read_dir(input_dir).unwrap();
     // result
     let mut log_files = Vec::new();
