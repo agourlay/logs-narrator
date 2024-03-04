@@ -94,8 +94,8 @@ fn render_log_entry(
 }
 
 fn parse_date(line: &str) -> Option<DateTime<FixedOffset>> {
-    if line.chars().count() > 25 {
-        let date_str = &line[1..25]; // focus on date (will break on other format!)
+    if line.chars().count() > 27 {
+        let date_str = &line[0..27]; // focus on date (will break on other format!)
         DateTime::parse_from_rfc3339(date_str).ok()
     } else {
         None
