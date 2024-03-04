@@ -1,6 +1,6 @@
 [package]
 name = "logs-narrator"
-version = "0.2.0"
+version = "0.4.0"
 authors = ["Arnaud Gourlay <arnaud.gourlay@gmail.com>"]
 description = "Merge logs to tell a story"
 edition = "2021"
