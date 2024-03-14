@@ -1,3 +1,4 @@
+use crate::DEFAULT_DATE_FORMAT;
 use chrono::{DateTime, FixedOffset};
 use colored::Color::*;
 use colored::{Color, ColoredString, Colorize};
@@ -93,10 +94,15 @@ fn render_log_entry(
     }
 }
 
-fn parse_date(line: &str) -> Option<DateTime<FixedOffset>> {
+fn parse_date(line: &str, date_format: &str) -> Option<DateTime<FixedOffset>> {
     if line.chars().count() > 27 {
-        let date_str = &line[0..27]; // focus on date (will break on other format!)
-        DateTime::parse_from_rfc3339(date_str).ok()
+        // assume date is at the beginning of the line
+        let date_str = &line.split(' ').next()?;
+        if date_format == DEFAULT_DATE_FORMAT {
+            DateTime::parse_from_rfc3339(date_str).ok()
+        } else {
+            DateTime::parse_from_str(date_str, date_format).ok()
+        }
     } else {
         None
     }
@@ -132,10 +138,12 @@ const COLORS_FOR_IDS: [Color; 10] = [
     BrightCyan,
 ];
 
-/// Assume files fit in memory \o/
+/// TODO Works with iterator instead of assuming files fit in memory \o/
+/// Maybe merging with https://docs.rs/itertools/latest/itertools/structs/type.KMerge.html
 pub fn load_files_in_memory(
     input_dir: &str,
     id_detection_regex: Option<Regex>,
+    date_format: &str,
 ) -> io::Result<Vec<LogFile>> {
     // validate input dir
     let logs_path = Path::new(input_dir);
@@ -189,7 +197,7 @@ pub fn load_files_in_memory(
             });
         let lines = content
             .into_iter()
-            .filter_map(|line| match parse_date(&line) {
+            .filter_map(|line| match parse_date(&line, date_format) {
                 None => {
                     println!("WARN:Could not find valid timestamp in line:{}", &line);
                     None
