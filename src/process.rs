@@ -23,10 +23,10 @@ pub fn process_log_files(log_files: Vec<LogFile>) {
     loop {
         // rehydrate empty staged lines
         for (index, offset) in offsets.iter().enumerate() {
-            if staged_lines[index].is_none() {
-                if let Some(line) = log_files[index].lines.get(*offset) {
-                    staged_lines[index] = Some(line.clone());
-                }
+            if staged_lines[index].is_none()
+                && let Some(line) = log_files[index].lines.get(*offset)
+            {
+                staged_lines[index] = Some(line.clone());
             }
         }
         // exit if nothing staged

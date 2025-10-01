@@ -14,7 +14,11 @@ jobs:
     name: Rust CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: Check code formatting
         run: cargo fmt --all -- --check
       - name: Build
