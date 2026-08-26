@@ -11,7 +11,7 @@ keywords = ["logs", "merger"]
 edition = "2024"
 
 [dependencies]
-clap = { version = "4.5.48", features = ["derive"] }
-chrono = "0.4.42"
-colored = "3.0.0"
-regex = "1.11.3"
+clap = { version = "4.5.66", features = ["derive"] }
+chrono = "0.4.45"
+colored = "3.1.1"
+regex = "1.13.1"

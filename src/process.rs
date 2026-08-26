@@ -87,7 +87,7 @@ fn render_log_entry(
 
         // color ids founds
         for (id, colored_id) in color_index {
-            tmp_line = tmp_line.replace(id, &format!("{}", &colored_id));
+            tmp_line = tmp_line.replace(id, &format!("{}", colored_id));
         }
 
         println!("[{}][{}]{}", log_file.file_name, prefix, tmp_line);
@@ -199,7 +199,7 @@ pub fn load_files_in_memory(
             .into_iter()
             .filter_map(|line| match parse_date(&line, date_format) {
                 None => {
-                    println!("WARN:Could not find valid timestamp in line:{}", &line);
+                    println!("WARN:Could not find valid timestamp in line:{}", line);
                     None
                 }
                 Some(timestamp) => Some(LogEntry { timestamp, line }),
