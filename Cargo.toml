@@ -1,6 +1,6 @@
 [package]
 name = "logs-narrator"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Arnaud Gourlay <arnaud.gourlay@gmail.com>"]
 description = "Merge logs to tell a story"
 repository = "https://github.com/agourlay/logs-narrator"
@@ -8,6 +8,7 @@ license = "Apache-2.0"
 readme = "README.md"
 categories = ["command-line-utilities"]
 keywords = ["logs", "merger"]
+exclude = ["example.png", ".github", ".idea"]
 edition = "2024"
 
 [dependencies]

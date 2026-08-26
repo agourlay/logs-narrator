@@ -22,8 +22,8 @@ jobs:
       - name: Check code formatting
         run: cargo fmt --all -- --check
       - name: Build
-        run: cargo build --verbose
+        run: cargo build
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test
       - name: Check cargo clippy warnings
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings

@@ -1,15 +1,21 @@
 # logs-narrator
 
+[![Build status](https://github.com/agourlay/logs-narrator/actions/workflows/ci.yml/badge.svg)](https://github.com/agourlay/logs-narrator/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/logs-narrator.svg)](https://crates.io/crates/logs-narrator)
+
 Merge log files according to the timestamps to display the logs in a chronological order.
 
 Alternative to [lnav](https://github.com/tstack/lnav) where an additional host id can be extracted via a regex for logs correlation.
 
-![example](example.png)
+![example](https://raw.githubusercontent.com/agourlay/logs-narrator/master/example.png)
 
 
 ## Disclaimer
 
-This tool has not been tested outside my personal use case and is absolutely **NOT** production ready!
+This tool was built for my own use case: merging the logs of a local cluster to follow
+what happened across nodes. Its scope is deliberately narrow - a directory of `.log`
+files whose lines start with a timestamp - and it makes no attempt to be a general
+purpose log viewer.
 
 Feel free to open an issue if you encounter any problem.
 
