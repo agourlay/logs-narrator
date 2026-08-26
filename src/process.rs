@@ -141,7 +141,10 @@ fn render_entry(entry: &LogEntry, log_file: &LogFile, color_index: &ColorIndex) 
         Some(id) => format!("[{}][{}]", log_file.file_name_colored, id),
         None => format!("[{}]", log_file.file_name_colored),
     };
-    let mut rendered = Vec::with_capacity(1 + entry.continuations.len());
+    let mut rendered = Vec::with_capacity(entry.leading.len() + 1 + entry.continuations.len());
+    for leading in &entry.leading {
+        rendered.push(format!("{prefix}{}", render_line(leading, 0, color_index)));
+    }
     rendered.push(format!(
         "{prefix}{}",
         render_line(&entry.line, entry.message_start, color_index)
@@ -215,6 +218,9 @@ pub struct LogEntry {
     message_start: usize,
     /// following lines without a timestamp of their own (stack traces, wrapped messages)
     continuations: Vec<String>,
+    /// lines that preceded the first timestamp of the file (banners, startup crashes),
+    /// carried by the earliest entry so that they open the file's part of the story
+    leading: Vec<String>,
 }
 
 pub struct LogFile {
@@ -319,7 +325,7 @@ pub fn load_files_in_memory(
 /// Turns raw lines into entries, attaching lines without a timestamp to the entry above them.
 fn parse_entries(content: Vec<String>, date_format: &str, file_name: &str) -> Vec<LogEntry> {
     let mut entries: Vec<LogEntry> = Vec::with_capacity(content.len());
-    let mut orphans = 0;
+    let mut leading: Vec<String> = Vec::new();
     for line in content {
         // blank lines carry no information once files are interleaved
         if line.trim().is_empty() {
@@ -331,20 +337,30 @@ fn parse_entries(content: Vec<String>, date_format: &str, file_name: &str) -> Ve
                 line,
                 message_start,
                 continuations: Vec::new(),
+                leading: Vec::new(),
             }),
-            // no timestamp: continuation of the previous entry, unless there is none yet
+            // no timestamp: continuation of the previous entry, or - when nothing has been
+            // stamped yet - part of whatever the file printed before it started logging
             None => match entries.last_mut() {
                 Some(previous) => previous.continuations.push(line),
-                None => orphans += 1,
+                None => leading.push(line),
             },
         }
-    }
-    if orphans > 0 {
-        eprintln!("WARN: {file_name}: dropped {orphans} line(s) before the first timestamp");
     }
     // a single file is not necessarily sorted: threads race between stamping and writing,
     // and the merge below can only be as chronological as the files it is fed
     entries.sort_by_key(|entry| entry.timestamp);
+    // the lines above the first timestamp happened before anything this file stamped, so
+    // they ride with its earliest entry rather than being guessed a timestamp of their own
+    match entries.first_mut() {
+        Some(earliest) => earliest.leading = leading,
+        // nothing was ever stamped: there is no point in the story to hang them from
+        None if !leading.is_empty() => eprintln!(
+            "WARN: {file_name}: dropped {} line(s), no timestamp found in the whole file",
+            leading.len()
+        ),
+        None => (),
+    }
     entries
 }
 
@@ -374,6 +390,7 @@ mod tests {
             line: line.to_string(),
             message_start,
             continuations: Vec::new(),
+            leading: Vec::new(),
         }
     }
 
@@ -520,6 +537,11 @@ mod tests {
         ];
         let entries = parse_entries(content, DEFAULT_DATE_FORMAT, "a.log");
         assert_eq!(entries.len(), 2);
+        // the banner is kept, carried by the earliest entry
+        assert_eq!(
+            entries[0].leading,
+            vec!["banner without timestamp".to_string()]
+        );
         assert_eq!(
             entries[0].continuations,
             vec![
@@ -566,6 +588,117 @@ mod tests {
             .map(|entry| &entry.line[entry.message_start..])
             .collect();
         assert_eq!(messages, vec![" b", " a", " c"]);
+    }
+
+    #[test]
+    fn keeps_lines_preceding_the_first_timestamp() {
+        // a startup crash is printed before anything gets logged - issue #3
+        let content = vec![
+            "thread 'main' panicked at src/lib.rs:1: STARTUP CRASH".to_string(),
+            "note: run with RUST_BACKTRACE=1".to_string(),
+            "2023-01-10T10:00:01.000000+00:00 started".to_string(),
+            "2023-01-10T10:00:02.000000+00:00 next".to_string(),
+        ];
+        let entries = parse_entries(content, DEFAULT_DATE_FORMAT, "a.log");
+        assert_eq!(entries.len(), 2);
+        assert_eq!(
+            entries[0].leading,
+            vec![
+                "thread 'main' panicked at src/lib.rs:1: STARTUP CRASH".to_string(),
+                "note: run with RUST_BACKTRACE=1".to_string(),
+            ]
+        );
+        assert!(entries[1].leading.is_empty());
+    }
+
+    #[test]
+    fn leading_lines_ride_with_the_earliest_entry_not_the_first_written() {
+        // the file is unsorted, so the first line written is not the earliest one
+        let content = vec![
+            "banner".to_string(),
+            "2023-01-10T10:00:09.000000+00:00 written first".to_string(),
+            "2023-01-10T10:00:01.000000+00:00 actually earliest".to_string(),
+        ];
+        let entries = parse_entries(content, DEFAULT_DATE_FORMAT, "a.log");
+        let messages: Vec<&str> = entries
+            .iter()
+            .map(|entry| &entry.line[entry.message_start..])
+            .collect();
+        assert_eq!(messages, vec![" actually earliest", " written first"]);
+        assert_eq!(entries[0].leading, vec!["banner".to_string()]);
+        assert!(entries[1].leading.is_empty());
+    }
+
+    #[test]
+    fn a_file_without_any_timestamp_yields_no_entry() {
+        let content = vec!["banner".to_string(), "more banner".to_string()];
+        assert!(parse_entries(content, DEFAULT_DATE_FORMAT, "a.log").is_empty());
+    }
+
+    #[test]
+    fn renders_leading_lines_before_their_entry() {
+        let content = vec![
+            "STARTUP CRASH".to_string(),
+            "2023-01-10T10:00:01.000000+00:00 started".to_string(),
+            "   trailing detail".to_string(),
+        ];
+        let mut entries = parse_entries(content, DEFAULT_DATE_FORMAT, "a.log");
+        let log_entry = entries.remove(0);
+        let rendered = with_color(false, || {
+            let file = log_file("a.log", None, Green, vec![]);
+            render_entry(&log_entry, &file, &ColorIndex::build(&[]))
+        });
+        assert_eq!(
+            rendered,
+            vec![
+                "[a.log]STARTUP CRASH".to_string(),
+                "[a.log]2023-01-10T10:00:01.000000+00:00 started".to_string(),
+                "[a.log]   trailing detail".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn leading_lines_of_one_file_do_not_jump_ahead_of_another_file() {
+        // they open their own file's part of the story, not the whole merge
+        let a = log_file(
+            "a.log",
+            None,
+            Green,
+            parse_entries(
+                vec![
+                    "LATE FILE BANNER".to_string(),
+                    "2023-01-10T10:00:05.000000+00:00 a5".to_string(),
+                ],
+                DEFAULT_DATE_FORMAT,
+                "a.log",
+            ),
+        );
+        let b = log_file(
+            "b.log",
+            None,
+            Blue,
+            parse_entries(
+                vec!["2023-01-10T10:00:01.000000+00:00 b1".to_string()],
+                DEFAULT_DATE_FORMAT,
+                "b.log",
+            ),
+        );
+        let files = vec![a, b];
+        let color_index = ColorIndex::build(&files);
+        let rendered: Vec<String> = with_color(false, || {
+            Merger::new(&files)
+                .flat_map(|(index, entry)| render_entry(entry, &files[index], &color_index))
+                .collect()
+        });
+        assert_eq!(
+            rendered,
+            vec![
+                "[b.log]2023-01-10T10:00:01.000000+00:00 b1".to_string(),
+                "[a.log]LATE FILE BANNER".to_string(),
+                "[a.log]2023-01-10T10:00:05.000000+00:00 a5".to_string(),
+            ]
+        );
     }
 
     #[test]

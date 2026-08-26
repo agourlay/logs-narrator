@@ -45,8 +45,11 @@ automatically when `stdout` is not a terminal.
 Each line of a `.log` file is expected to start with a timestamp matching
 `--date-format`. Files are sorted individually before being merged, so logs written
 by several threads racing between stamping and writing still come out in order. Lines
-without one - stack traces, wrapped messages - are attached to the line above them.
-Blank lines are dropped.
+without one - stack traces, wrapped messages - are attached to the line above them,
+and those preceding the first timestamp of a file - banners, startup crashes - open
+that file's earliest entry. No timestamp is ever invented for them, so they stay
+glued to the entry they belong to instead of drifting through the merge. Blank
+lines are dropped.
 
 
 ## Installation
